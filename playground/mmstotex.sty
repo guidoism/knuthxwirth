@@ -1,0 +1,137 @@
+%  mmstotex.sty
+%  Style file for typesetting mms source code produced 
+%  by mms to tex
+%  defines a table with six columns: 
+%  line numbers, labels, opcodes, arguments, analysis, comment
+%  and various other controlsequences to fine tune the layout.
+
+
+% amount of skip above and below mms source
+\newskip\abovemmsskip 
+\abovemmsskip=6pt plus 2pt minus 3pt%space above the program
+\newskip\belowmmsskip 
+\belowmmsskip=6pt plus 2pt minus 3pt% space after the program
+
+% The counter for the linenumbers
+\newcount\mmsline
+\global\mmsline=1%
+
+% let the display start with this line number
+\def\nextmmsline#1{{\global\mmsline=#1}}
+
+% let the display start with the line number following this line number
+\def\lastmmsline#1{{\global\mmsline=#1\global\advance\mmsline by 1}}
+
+% switch the display of frequency counts off.
+\newif\ifnommscounts
+\nommscountsfalse
+\def\mmscountsoff{{\global\nommscountstrue}}
+
+% switch the display of line numbers off.
+\newif\ifnommslines
+\nommslinesfalse
+\def\mmslinesoff{{\global\nommslinestrue}}
+
+% start an mms display on the same line as the solution number
+\def\mmsflush{%
+\penalty 900
+\vskip -\abovemmsskip
+\penalty 900
+\vskip -\baselineskip
+\penalty 900
+\mmslinesoff}
+
+% define a reference to a line number
+\def\lineref|#1|{{\advance\mmsline by -1\immediate\write\refo{\string|#1 {%
+      \ifmmsthreedigits\ifnum\mmsline<100 0\fi\fi
+      \ifnum\mmsline<10 0\fi
+      \the\mmsline}}}}
+
+% define a reference to a runtime formula see texbook Appendix D page 382
+\def\rtref|#1|#2|{\ifhmode\else\noalign\fi{%
+  \def\next{|#1 {#2}}%
+  \def\strip##1>{}%
+  \immediate\write\refo{\expandafter\strip\meaning\next}}}
+
+% the default skip if such a skip is desired inside a display of mms code
+\def\mmsskip{\noalign{\smallskip}}
+
+%% the Program environment from the MMIX Buch adapted
+
+\def\specialunder{\ifmmode\def\next{_}\else\chardef\next=`\_\fi\next}%
+{\catcode`\_=\active\gdef\underspecial{\catcode`\_\active \global\let_=\specialunder}}%
+
+% define a hskip to follow the line number to make the labels align with 
+% text after a parindent
+\newdimen\linenoskip
+\def\setlinenoskip{%
+\setbox0=\hbox{\flexninepoint\it 00}
+\linenoskip=\parindent
+\advance\linenoskip by -\wd0
+}\setlinenoskip
+
+% Set the following display with 3-digit line numbers
+\newif\ifmmsthreedigits
+\mmsthreedigitsfalse
+\def\largemms{\mmsthreedigitstrue}
+
+
+% start the display of mms code
+\def\beginmms{%
+  \ifhmode\par\unskip%     end paragraph and remove vertical space
+  %\subsubsectionbreak% move single lines to next page
+  \vskip\abovemmsskip%   space above the mms code
+%  \smallskip%   space above the mms code
+  \else\unskip
+  %\subsubsectionbreak% move single lines to next page
+  \vskip\abovemmsskip%   space above the mms code
+  \fi
+  \mmson
+}
+\def\mmson{%
+  \bgroup
+    \def\linenumber{\hbox{\it
+      \ifnommslines
+        \hphantom{00}%
+      \else
+        \ifmmsthreedigits\ifnum\mmsline<100 0\fi\fi
+        \ifnum\mmsline<10 0\fi
+        \number\mmsline
+        \global\advance\mmsline by 1%
+      \fi}}%
+    \flexninepoint
+    \def\bg##1{{}_{[##1]}}
+    \def\fmt##1{##1}%
+    \def\mmsstrut{\strut}%{\lower .2ex\vbox to \baselineskip {}}%
+    \def\mmsno{\llap{\linenumber}}% to have a linenumber in a full comment line
+    \def\mmsbreak{\noalign{\penalty-100}}% taocpmac for good page break
+    \def\sops{\global\catcode`\|=\other \global\catcode`\<=\other }% make | non active in operands
+    \def\nops{\global\catcode`\|=\active \global\catcode`\<=\active }% undo the effect again
+%   \let\\\cr
+    \tabskip=0pt%tabskip before first column
+    \halign to \hsize \bgroup % allow to squezze a bit
+      \mmsstrut\hfil\linenumber\ignorespaces##\kern\linenoskip\tabskip=0em minus 0.1em&% nummer
+      \tt\ignorespaces##\hfil\tabskip=0.5em minus 0.3em&%      label
+      \tt\ignorespaces##\hfil\tabskip=0.5em minus 0.3em&%      opcode
+      \sops\tt\ignorespaces##\hfil\tabskip=1em plus 6.375in minus 2em \nops&%       operand, tabskip may fill line
+      \ifnommscounts\hfil\else\hfil$##$\hfil\fi\tabskip=1em plus 1fil minus 1em&%     frequencys
+      \rm\ignorespaces##\hfil\tabskip=0pt plus 1fill%   comment and extra space
+     \cr
+%    Define minimum column widths no extra line if interlineskip is off
+     \omit\mmsstrut\hskip\parindent&\hphantom{H0 }&\hphantom{OPCD }&\hphantom{XYZ }&&\cr
+     \noalign{\nobreak\vskip-\baselineskip}% skip back over prototype line
+}
+
+\def\mmsoff{\noalign{\subsubsectionbreak}\crcr\egroup
+  \egroup
+}
+\def\endmms{\mmsoff
+  \vskip\belowmmsskip
+  \global\mmsline=1%
+  \global\nommslinesfalse
+  \global\nommscountsfalse
+  \global\mmsthreedigitsfalse
+% \everypar{{\setbox0=\lastbox}\everypar{}}% no indentation in the next paragraph
+\noindent\ignorespaces}
+
+\def\mmsvdots{$\vcenter{\vskip -7pt\smallskip\vdots\smallskip}$}
